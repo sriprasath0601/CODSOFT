@@ -1,0 +1,289 @@
+# ==========================================
+# IRIS FLOWER CLASSIFICATION PROJECT
+# ==========================================
+
+# Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import joblib
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay
+)
+
+# ==========================================
+# Load Dataset
+# ==========================================
+
+iris = load_iris()
+
+df = pd.DataFrame(iris.data, columns=iris.feature_names)
+
+df["Species"] = iris.target
+df["Species"] = df["Species"].map({
+    0: "Setosa",
+    1: "Versicolor",
+    2: "Virginica"
+})
+
+# ==========================================
+# Display Dataset
+# ==========================================
+
+print("\n========== FIRST 5 ROWS ==========")
+print(df.head())
+
+print("\n========== LAST 5 ROWS ==========")
+print(df.tail())
+
+print("\n========== RANDOM 10 RECORDS ==========")
+print(df.sample(10))
+
+print("\n========== DATASET SHAPE ==========")
+print(df.shape)
+
+print("\n========== DATASET INFORMATION ==========")
+print(df.info())
+
+print("\n========== STATISTICAL SUMMARY ==========")
+print(df.describe())
+
+print("\n========== MISSING VALUES ==========")
+print(df.isnull().sum())
+
+print("\n========== SPECIES COUNT ==========")
+print(df["Species"].value_counts())
+
+# ==========================================
+# Pie Chart
+# ==========================================
+
+plt.figure(figsize=(6,6))
+df["Species"].value_counts().plot(
+    kind="pie",
+    autopct="%1.1f%%",
+    startangle=90
+)
+plt.title("Species Distribution")
+plt.ylabel("")
+plt.show()
+
+# ==========================================
+# Count Plot
+# ==========================================
+
+plt.figure(figsize=(6,5))
+sns.countplot(data=df, x="Species")
+plt.title("Count of Each Iris Species")
+plt.show()
+
+# ==========================================
+# Histograms
+# ==========================================
+
+df.hist(figsize=(12,8), bins=15)
+plt.suptitle("Histogram of Features")
+plt.show()
+
+# ==========================================
+# Pair Plot
+# ==========================================
+
+sns.pairplot(df, hue="Species")
+plt.show()
+
+# ==========================================
+# Correlation Heatmap
+# ==========================================
+
+plt.figure(figsize=(8,6))
+sns.heatmap(
+    df.drop("Species", axis=1).corr(),
+    annot=True,
+    cmap="coolwarm"
+)
+plt.title("Correlation Heatmap")
+plt.show()
+
+# ==========================================
+# Box Plots
+# ==========================================
+
+for column in df.columns[:-1]:
+    plt.figure(figsize=(6,4))
+    sns.boxplot(x="Species", y=column, data=df)
+    plt.title(column)
+    plt.show()
+
+# ==========================================
+# Prepare Data
+# ==========================================
+
+X = iris.data
+y = iris.target
+
+# ==========================================
+# Split Dataset
+# ==========================================
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+# ==========================================
+# Train Random Forest Model
+# ==========================================
+
+model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+# ==========================================
+# Prediction
+# ==========================================
+
+predictions = model.predict(X_test)
+
+# ==========================================
+# Accuracy
+# ==========================================
+
+accuracy = accuracy_score(y_test, predictions)
+
+print("\n========== MODEL ACCURACY ==========")
+print(f"Accuracy : {accuracy:.2f}")
+
+# ==========================================
+# Classification Report
+# ==========================================
+
+print("\n========== CLASSIFICATION REPORT ==========")
+
+print(classification_report(
+    y_test,
+    predictions,
+    target_names=iris.target_names
+))
+
+# ==========================================
+# Confusion Matrix
+# ==========================================
+
+cm = confusion_matrix(y_test, predictions)
+
+print("\n========== CONFUSION MATRIX ==========")
+print(cm)
+
+# ==========================================
+# Confusion Matrix Visualization
+# ==========================================
+
+disp = ConfusionMatrixDisplay(
+    confusion_matrix=cm,
+    display_labels=iris.target_names
+)
+
+disp.plot(cmap="Blues")
+plt.title("Confusion Matrix")
+plt.show()
+
+# ==========================================
+# Feature Importance
+# ==========================================
+
+importance = model.feature_importances_
+
+feature_names = iris.feature_names
+
+importance_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Importance": importance
+})
+
+importance_df = importance_df.sort_values(
+    by="Importance",
+    ascending=False
+)
+
+print("\n========== FEATURE IMPORTANCE ==========")
+print(importance_df)
+
+plt.figure(figsize=(8,5))
+plt.barh(
+    importance_df["Feature"],
+    importance_df["Importance"]
+)
+plt.title("Feature Importance")
+plt.xlabel("Importance")
+plt.show()
+
+# ==========================================
+# Cross Validation
+# ==========================================
+
+scores = cross_val_score(
+    model,
+    X,
+    y,
+    cv=5
+)
+
+print("\n========== CROSS VALIDATION ==========")
+
+print("Scores :", scores)
+
+print("Average Accuracy :", scores.mean())
+
+# ==========================================
+# Predict New Flowers
+# ==========================================
+
+samples = [
+
+    [5.1,3.5,1.4,0.2],
+
+    [6.0,2.9,4.5,1.5],
+
+    [6.8,3.0,5.5,2.1]
+
+]
+
+pred = model.predict(samples)
+
+print("\n========== NEW PREDICTIONS ==========")
+
+for sample, prediction in zip(samples, pred):
+    print(
+        sample,
+        " --> ",
+        iris.target_names[prediction]
+    )
+
+# ==========================================
+# Save Model
+# ==========================================
+
+joblib.dump(
+    model,
+    "iris_model.pkl"
+)
+
+print("\nModel saved successfully as iris_model.pkl")
+
+# ==========================================
+# End of Project
+# ==========================================
